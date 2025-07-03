@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -170,6 +171,7 @@
         }
 
         .image-box canvas {
+            min-width: 300px;
             max-width: 100%;
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
@@ -230,11 +232,11 @@
             .image-container {
                 grid-template-columns: 1fr;
             }
-            
+
             .controls {
                 flex-direction: column;
             }
-            
+
             .control-group {
                 min-width: auto;
             }
@@ -258,23 +260,41 @@
             color: #666;
             font-size: 0.9em;
         }
+
+        .crop-area {
+            position: absolute;
+            border: 2px dashed #764ba2;
+            background-color: rgba(118, 75, 162, 0.2);
+            cursor: move;
+            resize: both;
+            overflow: auto;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            display: inline-block;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>🎨 Color Negative to Positive Converter</h1>
-        
+
         <div class="supported-formats">
             <h3>รองรับไฟล์รูปแบบ</h3>
             <p>RAW: .RAW, .CR2, .NEF, .ARW, .DNG, .PEF, .RW2, .ORF | Standard: .JPG, .JPEG, .PNG, .BMP, .TIFF, .WEBP</p>
-            <p><strong>หมายเหตุ:</strong> โปรแกรมจะรักษาความละเอียดเต็มและเลือกรูปแบบไฟล์ที่เหมาะสม (PNG สำหรับคุณภาพสูงสุด)</p>
+            <p><strong>หมายเหตุ:</strong> โปรแกรมจะรักษาความละเอียดเต็มและเลือกรูปแบบไฟล์ที่เหมาะสม (PNG
+                สำหรับคุณภาพสูงสุด)</p>
         </div>
 
         <div class="upload-section" id="uploadSection">
             <div class="upload-icon">📁</div>
             <div class="upload-text">ลากไฟล์มาวางหรือคลิกเพื่อเลือกไฟล์</div>
             <button class="upload-btn" onclick="document.getElementById('fileInput').click()">เลือกไฟล์</button>
-            <input type="file" id="fileInput" class="file-input" accept=".raw,.cr2,.nef,.arw,.dng,.pef,.rw2,.orf,.jpg,.jpeg,.png,.bmp,.tiff,.webp" onchange="handleFileSelect(event)">
+            <input type="file" id="fileInput" class="file-input"
+                accept=".raw,.cr2,.nef,.arw,.dng,.pef,.rw2,.orf,.jpg,.jpeg,.png,.bmp,.tiff,.webp"
+                onchange="handleFileSelect(event)">
         </div>
 
         <div class="file-info" id="fileInfo" style="display: none;">
@@ -303,16 +323,26 @@
         <div class="image-container">
             <div class="image-box">
                 <h3>🖼️ รูปต้นฉบับ (Original)</h3>
-                <canvas id="originalCanvas"></canvas>
+                <div class="canvas-wrapper" id="canvasWrapper">
+                    <canvas id="originalCanvas"></canvas>
+                    <div class="crop-area" id="cropArea" style="display: none;"></div>
+                </div>
             </div>
             <div class="image-box">
                 <h3>✨ รูปที่แปลงแล้ว (Converted)</h3>
-                <canvas id="convertedCanvas"></canvas>
+                <div class="canvas-wrapper">
+                    <canvas id="convertedCanvas"></canvas>
+                </div>
+
+                <button class="upload-btn" onclick="enableCrop()">✂️ เลือกพื้นที่ (Crop)</button>
+                <button class="upload-btn" onclick="applyCrop()">✅ ใช้ Crop</button>
             </div>
         </div>
 
         <div style="text-align: center;">
-            <button class="download-btn" id="downloadBtn" onclick="downloadImage()" disabled>💾 ดาวน์โหลดรูป (ความละเอียดเต็ม)</button>
+            <button class="download-btn" id="downloadBtn" onclick="downloadImage()" disabled>💾 ดาวน์โหลดรูป
+                (ความละเอียดเต็ม)</button>
+            <button class="download-btn" onclick="rotateImage()">🔁 หมุนรูปภาพ (Rotate 90°)</button>
             <button class="download-btn" onclick="resetAll()">🔄 เริ่มใหม่</button>
         </div>
     </div>
@@ -325,6 +355,7 @@
         let brightness = 0;
         let contrast = 100;
         let gamma = 1.0;
+        let rotation = 0;
 
         // การจัดการ drag and drop
         const uploadSection = document.getElementById('uploadSection');
@@ -359,20 +390,20 @@
             currentFile = file;
             document.getElementById('fileName').textContent = `ไฟล์: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
             document.getElementById('fileInfo').style.display = 'block';
-            
+
             showProgress();
-            
+
             // ตรวจสอบประเภทไฟล์
             const fileExtension = file.name.split('.').pop().toLowerCase();
             const rawFormats = ['raw', 'cr2', 'nef', 'arw', 'dng', 'pef', 'rw2', 'orf'];
-            
+
             if (rawFormats.includes(fileExtension)) {
                 // สำหรับไฟล์ RAW ให้แสดงข้อความแจ้งเตือน
                 alert('หมายเหตุ: ไฟล์ RAW จะถูกแปลงเป็นรูปแบบมาตรฐานก่อนการประมวลผล\nสำหรับผลลัพธ์ที่ดีที่สุด แนะนำให้แปลงเป็น JPEG หรือ PNG ก่อน');
             }
-            
+
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 loadImage(e.target.result);
             };
             reader.readAsDataURL(file);
@@ -380,9 +411,9 @@
 
         function loadImage(src) {
             const img = new Image();
-            img.onload = function() {
+            img.onload = function () {
                 originalImage = img; // เก็บ Image object เดิม
-                
+
                 const originalCanvas = document.getElementById('originalCanvas');
                 const convertedCanvas = document.getElementById('convertedCanvas');
                 const ctx1 = originalCanvas.getContext('2d');
@@ -400,7 +431,7 @@
                 const maxWidth = 400;
                 const maxHeight = 300;
                 let { width, height } = img;
-                
+
                 if (width > maxWidth || height > maxHeight) {
                     const ratio = Math.min(maxWidth / width, maxHeight / height);
                     width *= ratio;
@@ -412,13 +443,13 @@
 
                 // วาดรูปต้นฉบับสำหรับแสดงผล
                 ctx1.drawImage(img, 0, 0, width, height);
-                
+
                 // เก็บข้อมูลรูปต้นฉบับสำหรับแสดงผล
                 originalImageData = ctx1.getImageData(0, 0, width, height);
-                
+
                 // แปลงรูป
                 convertImage();
-                
+
                 hideProgress();
                 document.getElementById('downloadBtn').disabled = false;
             };
@@ -430,7 +461,7 @@
 
             const convertedCanvas = document.getElementById('convertedCanvas');
             const ctx = convertedCanvas.getContext('2d');
-            
+
             // สร้างข้อมูลรูปใหม่
             const imageData = new ImageData(
                 new Uint8ClampedArray(originalImageData.data),
@@ -544,32 +575,6 @@
             link.click();
         }
 
-        function resetAll() {
-            originalImageData = null;
-            fullResImageData = null;
-            originalImage = null;
-            currentFile = null;
-            brightness = 0;
-            contrast = 100;
-            gamma = 1.0;
-            
-            document.getElementById('brightnessSlider').value = 0;
-            document.getElementById('contrastSlider').value = 100;
-            document.getElementById('gammaSlider').value = 1.0;
-            document.getElementById('brightnessValue').textContent = 0;
-            document.getElementById('contrastValue').textContent = 100;
-            document.getElementById('gammaValue').textContent = 1.0;
-            
-            document.getElementById('fileInfo').style.display = 'none';
-            document.getElementById('downloadBtn').disabled = true;
-            
-            const canvases = document.querySelectorAll('canvas');
-            canvases.forEach(canvas => {
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-            });
-        }
-
         function showProgress() {
             document.getElementById('progressBar').style.display = 'block';
             let progress = 0;
@@ -588,6 +593,168 @@
                 document.getElementById('progressFill').style.width = '0%';
             }, 500);
         }
+
+        let isCropping = false;
+        let cropArea = document.getElementById("cropArea");
+        let canvasWrapper = document.getElementById("canvasWrapper");
+        // for drag cropping
+        let isDragging = false;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        function rotateImage() {
+            if (!originalImage) return;
+
+            rotation = (rotation + 90) % 360;
+
+            const rotatedCanvas = document.createElement('canvas');
+            const ctx = rotatedCanvas.getContext('2d');
+
+            const width = originalImage.width;
+            const height = originalImage.height;
+
+            if (rotation === 90 || rotation === 270) {
+                rotatedCanvas.width = height;
+                rotatedCanvas.height = width;
+            } else {
+                rotatedCanvas.width = width;
+                rotatedCanvas.height = height;
+            }
+
+            // Apply rotation and draw
+            ctx.save();
+            ctx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
+            ctx.rotate((rotation * Math.PI) / 180);
+            ctx.drawImage(originalImage, -width / 2, -height / 2);
+            ctx.restore();
+
+            const dataURL = rotatedCanvas.toDataURL("image/png");
+
+            loadImage(dataURL); // re-load rotated image
+        }
+
+        function enableCrop() {
+            if (!originalImageData) return;
+            cropArea.style.display = 'block';
+            cropArea.style.top = '10px';
+            cropArea.style.left = '10px';
+            cropArea.style.width = '100px';
+            cropArea.style.height = '100px';
+            isCropping = true;
+        }
+
+        function applyCrop() {
+            if (!isCropping || !originalImage) return;
+
+            const canvas = document.getElementById("originalCanvas");
+            const displayWidth = canvas.clientWidth;
+            const displayHeight = canvas.clientHeight;
+
+            const scaleX = originalImage.width / displayWidth;
+            const scaleY = originalImage.height / displayHeight;
+
+            const rect = cropArea.getBoundingClientRect();
+            const wrapperRect = canvasWrapper.getBoundingClientRect();
+
+            const cropX = (rect.left - wrapperRect.left) * scaleX;
+            const cropY = (rect.top - wrapperRect.top) * scaleY;
+            const cropWidth = rect.width * scaleX;
+            const cropHeight = rect.height * scaleY;
+
+            // Create cropped image canvas
+            const croppedCanvas = document.createElement("canvas");
+            const ctx = croppedCanvas.getContext("2d");
+
+            croppedCanvas.width = cropWidth;
+            croppedCanvas.height = cropHeight;
+
+            ctx.drawImage(originalImage, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
+            // Load cropped image as new image
+            const croppedDataURL = croppedCanvas.toDataURL("image/png");
+
+            loadImage(croppedDataURL);
+            cropArea.style.display = 'none';
+            isCropping = false;
+        }
+
+        function resetAll() {
+            originalImageData = null;
+            fullResImageData = null;
+            originalImage = null;
+            currentFile = null;
+            brightness = 0;
+            contrast = 100;
+            gamma = 1.0;
+            rotation = 0;
+
+            document.getElementById('brightnessSlider').value = 0;
+            document.getElementById('contrastSlider').value = 100;
+            document.getElementById('gammaSlider').value = 1.0;
+            document.getElementById('brightnessValue').textContent = 0;
+            document.getElementById('contrastValue').textContent = 100;
+            document.getElementById('gammaValue').textContent = 1.0;
+
+            document.getElementById('fileInfo').style.display = 'none';
+            document.getElementById('downloadBtn').disabled = true;
+
+            const canvases = document.querySelectorAll('canvas');
+            canvases.forEach(canvas => {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            });
+        }
+
+        // Drag only when user clicks in center area (not on resizers)
+        cropArea.addEventListener('mousedown', (e) => {
+            // Check if clicked element is cropArea and not on resize border
+            const borderThreshold = 10;
+            const rect = cropArea.getBoundingClientRect();
+            const offsetX = e.clientX - rect.left;
+            const offsetY = e.clientY - rect.top;
+
+            // If near edges, do not drag (let the browser handle resizing)
+            if (
+                offsetX < borderThreshold ||
+                offsetX > rect.width - borderThreshold ||
+                offsetY < borderThreshold ||
+                offsetY > rect.height - borderThreshold
+            ) {
+                return; // near edge = let resize work
+            }
+
+            isDragging = true;
+            dragOffsetX = offsetX;
+            dragOffsetY = offsetY;
+
+            document.body.style.userSelect = "none";
+        });
+
+        // Attach global mousemove/mouseup so it works outside cropArea
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const wrapperRect = canvasWrapper.getBoundingClientRect();
+
+            let left = e.clientX - wrapperRect.left - dragOffsetX;
+            let top = e.clientY - wrapperRect.top - dragOffsetY;
+
+            const maxLeft = wrapperRect.width - cropArea.offsetWidth;
+            const maxTop = wrapperRect.height - cropArea.offsetHeight;
+
+            left = Math.max(0, Math.min(left, maxLeft));
+            top = Math.max(0, Math.min(top, maxTop));
+
+            cropArea.style.left = `${left}px`;
+            cropArea.style.top = `${top}px`;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            document.body.style.userSelect = "";
+        });
+
     </script>
 </body>
+
 </html>
