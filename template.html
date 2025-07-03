@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Negative to Positive Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .upload-section {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(102, 126, 234, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-section:hover {
+            border-color: #764ba2;
+            background: rgba(118, 75, 162, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .upload-section.dragover {
+            border-color: #764ba2;
+            background: rgba(118, 75, 162, 0.2);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+
+        .control-group {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            min-width: 200px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .control-group input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .image-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .image-box {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .image-box h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .image-box canvas {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .download-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+            margin: 10px 5px;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        }
+
+        .download-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .file-info {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .image-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .control-group {
+                min-width: auto;
+            }
+        }
+
+        .supported-formats {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .supported-formats h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .supported-formats p {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Color Negative to Positive Converter</h1>
+        
+        <div class="supported-formats">
+            <h3>รองรับไฟล์รูปแบบ</h3>
+            <p>RAW: .RAW, .CR2, .NEF, .ARW, .DNG, .PEF, .RW2, .ORF | Standard: .JPG, .JPEG, .PNG, .BMP, .TIFF, .WEBP</p>
+            <p><strong>หมายเหตุ:</strong> โปรแกรมจะรักษาความละเอียดเต็มและเลือกรูปแบบไฟล์ที่เหมาะสม (PNG สำหรับคุณภาพสูงสุด)</p>
+        </div>
+
+        <div class="upload-section" id="uploadSection">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">ลากไฟล์มาวางหรือคลิกเพื่อเลือกไฟล์</div>
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">เลือกไฟล์</button>
+            <input type="file" id="fileInput" class="file-input" accept=".raw,.cr2,.nef,.arw,.dng,.pef,.rw2,.orf,.jpg,.jpeg,.png,.bmp,.tiff,.webp" onchange="handleFileSelect(event)">
+        </div>
+
+        <div class="file-info" id="fileInfo" style="display: none;">
+            <p id="fileName"></p>
+        </div>
+
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="brightnessSlider">ความสว่าง (Brightness): <span id="brightnessValue">0</span></label>
+                <input type="range" id="brightnessSlider" min="-100" max="100" value="0" oninput="updateBrightness()">
+            </div>
+            <div class="control-group">
+                <label for="contrastSlider">ความเข้มข้น (Contrast): <span id="contrastValue">100</span>%</label>
+                <input type="range" id="contrastSlider" min="0" max="200" value="100" oninput="updateContrast()">
+            </div>
+            <div class="control-group">
+                <label for="gammaSlider">แกมมา (Gamma): <span id="gammaValue">1.0</span></label>
+                <input type="range" id="gammaSlider" min="0.1" max="3.0" step="0.1" value="1.0" oninput="updateGamma()">
+            </div>
+        </div>
+
+        <div class="image-container">
+            <div class="image-box">
+                <h3>🖼️ รูปต้นฉบับ (Original)</h3>
+                <canvas id="originalCanvas"></canvas>
+            </div>
+            <div class="image-box">
+                <h3>✨ รูปที่แปลงแล้ว (Converted)</h3>
+                <canvas id="convertedCanvas"></canvas>
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <button class="download-btn" id="downloadBtn" onclick="downloadImage()" disabled>💾 ดาวน์โหลดรูป (ความละเอียดเต็ม)</button>
+            <button class="download-btn" onclick="resetAll()">🔄 เริ่มใหม่</button>
+        </div>
+    </div>
+
+    <script>
+        let originalImageData = null;
+        let fullResImageData = null; // เก็บข้อมูลรูปความละเอียดเต็ม
+        let originalImage = null; // เก็บ Image object เดิม
+        let currentFile = null;
+        let brightness = 0;
+        let contrast = 100;
+        let gamma = 1.0;
+
+        // การจัดการ drag and drop
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            currentFile = file;
+            document.getElementById('fileName').textContent = `ไฟล์: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+            document.getElementById('fileInfo').style.display = 'block';
+            
+            showProgress();
+            
+            // ตรวจสอบประเภทไฟล์
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            const rawFormats = ['raw', 'cr2', 'nef', 'arw', 'dng', 'pef', 'rw2', 'orf'];
+            
+            if (rawFormats.includes(fileExtension)) {
+                // สำหรับไฟล์ RAW ให้แสดงข้อความแจ้งเตือน
+                alert('หมายเหตุ: ไฟล์ RAW จะถูกแปลงเป็นรูปแบบมาตรฐานก่อนการประมวลผล\nสำหรับผลลัพธ์ที่ดีที่สุด แนะนำให้แปลงเป็น JPEG หรือ PNG ก่อน');
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                loadImage(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function loadImage(src) {
+            const img = new Image();
+            img.onload = function() {
+                originalImage = img; // เก็บ Image object เดิม
+                
+                const originalCanvas = document.getElementById('originalCanvas');
+                const convertedCanvas = document.getElementById('convertedCanvas');
+                const ctx1 = originalCanvas.getContext('2d');
+                const ctx2 = convertedCanvas.getContext('2d');
+
+                // เก็บข้อมูลรูปความละเอียดเต็มก่อน
+                const fullCanvas = document.createElement('canvas');
+                const fullCtx = fullCanvas.getContext('2d');
+                fullCanvas.width = img.width;
+                fullCanvas.height = img.height;
+                fullCtx.drawImage(img, 0, 0);
+                fullResImageData = fullCtx.getImageData(0, 0, img.width, img.height);
+
+                // ปรับขนาด canvas สำหรับแสดงผล
+                const maxWidth = 400;
+                const maxHeight = 300;
+                let { width, height } = img;
+                
+                if (width > maxWidth || height > maxHeight) {
+                    const ratio = Math.min(maxWidth / width, maxHeight / height);
+                    width *= ratio;
+                    height *= ratio;
+                }
+
+                originalCanvas.width = convertedCanvas.width = width;
+                originalCanvas.height = convertedCanvas.height = height;
+
+                // วาดรูปต้นฉบับสำหรับแสดงผล
+                ctx1.drawImage(img, 0, 0, width, height);
+                
+                // เก็บข้อมูลรูปต้นฉบับสำหรับแสดงผล
+                originalImageData = ctx1.getImageData(0, 0, width, height);
+                
+                // แปลงรูป
+                convertImage();
+                
+                hideProgress();
+                document.getElementById('downloadBtn').disabled = false;
+            };
+            img.src = src;
+        }
+
+        function convertImage() {
+            if (!originalImageData) return;
+
+            const convertedCanvas = document.getElementById('convertedCanvas');
+            const ctx = convertedCanvas.getContext('2d');
+            
+            // สร้างข้อมูลรูปใหม่
+            const imageData = new ImageData(
+                new Uint8ClampedArray(originalImageData.data),
+                originalImageData.width,
+                originalImageData.height
+            );
+
+            const data = imageData.data;
+
+            // แปลง negative เป็น positive และปรับแต่งค่าต่างๆ
+            for (let i = 0; i < data.length; i += 4) {
+                // แปลง negative เป็น positive
+                let r = 255 - data[i];
+                let g = 255 - data[i + 1];
+                let b = 255 - data[i + 2];
+
+                // ปรับความสว่าง
+                r += brightness;
+                g += brightness;
+                b += brightness;
+
+                // ปรับความเข้มข้น
+                r = ((r - 128) * (contrast / 100)) + 128;
+                g = ((g - 128) * (contrast / 100)) + 128;
+                b = ((b - 128) * (contrast / 100)) + 128;
+
+                // ปรับแกมมา
+                r = Math.pow(r / 255, 1 / gamma) * 255;
+                g = Math.pow(g / 255, 1 / gamma) * 255;
+                b = Math.pow(b / 255, 1 / gamma) * 255;
+
+                // จำกัดค่าให้อยู่ในช่วง 0-255
+                data[i] = Math.max(0, Math.min(255, r));
+                data[i + 1] = Math.max(0, Math.min(255, g));
+                data[i + 2] = Math.max(0, Math.min(255, b));
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function updateBrightness() {
+            brightness = parseInt(document.getElementById('brightnessSlider').value);
+            document.getElementById('brightnessValue').textContent = brightness;
+            convertImage();
+        }
+
+        function updateContrast() {
+            contrast = parseInt(document.getElementById('contrastSlider').value);
+            document.getElementById('contrastValue').textContent = contrast;
+            convertImage();
+        }
+
+        function updateGamma() {
+            gamma = parseFloat(document.getElementById('gammaSlider').value);
+            document.getElementById('gammaValue').textContent = gamma;
+            convertImage();
+        }
+
+        function downloadImage() {
+            if (!fullResImageData) return;
+
+            // สร้าง canvas ใหม่สำหรับความละเอียดเต็ม
+            const fullCanvas = document.createElement('canvas');
+            const fullCtx = fullCanvas.getContext('2d');
+            fullCanvas.width = fullResImageData.width;
+            fullCanvas.height = fullResImageData.height;
+
+            // สร้างข้อมูลรูปใหม่จากความละเอียดเต็ม
+            const imageData = new ImageData(
+                new Uint8ClampedArray(fullResImageData.data),
+                fullResImageData.width,
+                fullResImageData.height
+            );
+
+            const data = imageData.data;
+
+            // แปลง negative เป็น positive และปรับแต่งค่าต่างๆ (ความละเอียดเต็ม)
+            for (let i = 0; i < data.length; i += 4) {
+                // แปลง negative เป็น positive
+                let r = 255 - data[i];
+                let g = 255 - data[i + 1];
+                let b = 255 - data[i + 2];
+
+                // ปรับความสว่าง
+                r += brightness;
+                g += brightness;
+                b += brightness;
+
+                // ปรับความเข้มข้น
+                r = ((r - 128) * (contrast / 100)) + 128;
+                g = ((g - 128) * (contrast / 100)) + 128;
+                b = ((b - 128) * (contrast / 100)) + 128;
+
+                // ปรับแกมมา
+                r = Math.pow(r / 255, 1 / gamma) * 255;
+                g = Math.pow(g / 255, 1 / gamma) * 255;
+                b = Math.pow(b / 255, 1 / gamma) * 255;
+
+                // จำกัดค่าให้อยู่ในช่วง 0-255
+                data[i] = Math.max(0, Math.min(255, r));
+                data[i + 1] = Math.max(0, Math.min(255, g));
+                data[i + 2] = Math.max(0, Math.min(255, b));
+            }
+
+            fullCtx.putImageData(imageData, 0, 0);
+
+            // ดาวน์โหลดความละเอียดเต็ม
+            const link = document.createElement('a');
+            link.download = 'converted_positive_' + (currentFile ? currentFile.name.split('.')[0] : 'image') + '_fullres.png';
+            link.href = fullCanvas.toDataURL('image/png', 1.0); // คุณภาพสูงสุด
+            link.click();
+        }
+
+        function resetAll() {
+            originalImageData = null;
+            fullResImageData = null;
+            originalImage = null;
+            currentFile = null;
+            brightness = 0;
+            contrast = 100;
+            gamma = 1.0;
+            
+            document.getElementById('brightnessSlider').value = 0;
+            document.getElementById('contrastSlider').value = 100;
+            document.getElementById('gammaSlider').value = 1.0;
+            document.getElementById('brightnessValue').textContent = 0;
+            document.getElementById('contrastValue').textContent = 100;
+            document.getElementById('gammaValue').textContent = 1.0;
+            
+            document.getElementById('fileInfo').style.display = 'none';
+            document.getElementById('downloadBtn').disabled = true;
+            
+            const canvases = document.querySelectorAll('canvas');
+            canvases.forEach(canvas => {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            });
+        }
+
+        function showProgress() {
+            document.getElementById('progressBar').style.display = 'block';
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 10;
+                document.getElementById('progressFill').style.width = progress + '%';
+                if (progress >= 100) {
+                    clearInterval(interval);
+                }
+            }, 100);
+        }
+
+        function hideProgress() {
+            setTimeout(() => {
+                document.getElementById('progressBar').style.display = 'none';
+                document.getElementById('progressFill').style.width = '0%';
+            }, 500);
+        }
+    </script>
+</body>
+</html>
